@@ -30,6 +30,7 @@ app.use(cookieParser());
 //Routes
 app.use("/api/users", userRouter);
 app.use("/api/posts", postRoutes);
+
 app.listen(PORT, () => {
   console.log(`server started at http:/localhost:${PORT}`);
 });
