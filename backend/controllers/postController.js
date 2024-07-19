@@ -3,13 +3,13 @@ import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
 const getPost = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.postid);
     if (!post) {
       return res.status(404).json({
         error: "Post not found",
       });
     }
-    res.status(200).json({ post });
+    res.status(200).json(post);
   } catch (error) {
     res.status(500).json({
       error: error.message,
@@ -49,10 +49,7 @@ const createPost = async (req, res) => {
     }
     const newPost = new Post({ postedBy, text, img });
     await newPost.save();
-    res.status(201).json({
-      message: "Post created successfully",
-      newPost,
-    });
+    res.status(201).json(newPost);
   } catch (error) {
     res.status(500).json({
       error: error.message,
@@ -73,6 +70,10 @@ const deletePost = async (req, res) => {
       return res.status(401).json({
         error: "Unauthorized to delete the post",
       });
+    }
+    if (post.img) {
+      const imgId = post.img.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(imgId);
     }
     await Post.findByIdAndDelete(req.params.id);
 
@@ -100,13 +101,14 @@ const likeOrUnlike = async (req, res) => {
     const userLikedPost = post.likes.includes(userId);
     if (userLikedPost) {
       //Unlike Post
-      await Post.updateOne({ _id: userId }, { $pull: { likes: userId } });
+      await Post.updateOne({ _id: postId }, { $pull: { likes: userId } });
       res.status(200).json({
         message: "Post unliked successfully",
       });
     } else {
       //Like Post
       post.likes.push(userId);
+      await post.save();
       res.status(200).json({
         message: "Post liked successfully",
       });
@@ -137,11 +139,8 @@ const replyToPost = async (req, res) => {
     }
     const reply = { userId, text, userProfilePic, username };
     post.replies.push(reply);
-    res.status(200).json({
-      message: "Reply added successfully",
-      post,
-    });
     await post.save();
+    res.status(200).json(reply);
   } catch (error) {
     res.status(500).json({
       error: error.message,
@@ -150,31 +149,51 @@ const replyToPost = async (req, res) => {
   }
 };
 
-const getFeed = async (req, res) => {
+const getFeedPosts = async (req, res) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(400).json({
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const following = user.following;
+
+    const feedPosts = await Post.find({ postedBy: { $in: following } }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json(feedPosts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+const getUserPosts = async (req, res) => {
+  const { username } = req.params;
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
         error: "User not found",
       });
     }
-    const following = user.following;
-    const feedPosts = await Post.find({
-      postedBy: { $in: following },
-    }).sort({
+    const posts = await Post.find({ postedBy: user._id }).sort({
       createdAt: -1,
     });
-    res.status(200).json({
-      message: "Feed featched successfully",
-      feedPosts,
-    });
+    res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({
       error: error.message,
     });
-    console.log("Error in getting the feed: ", error.message);
   }
 };
 
-export { createPost, getPost, deletePost, likeOrUnlike, replyToPost, getFeed };
+export {
+  createPost,
+  getPost,
+  deletePost,
+  likeOrUnlike,
+  replyToPost,
+  getFeedPosts,
+  getUserPosts,
+};

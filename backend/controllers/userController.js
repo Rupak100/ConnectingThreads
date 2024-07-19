@@ -2,6 +2,8 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helper/generateToken.js";
 import { v2 as cloudinary } from "cloudinary";
+import mongoose from "mongoose";
+import Post from "../models/postModel.js";
 
 //Registering the user -------------------->>>>>>>>>>>>>>-------------------
 const signupUser = async (req, res) => {
@@ -61,6 +63,10 @@ const loginUser = async (req, res) => {
         error: "Invalid username or password",
       });
     }
+    if (user.isFrozen) {
+      user.isFrozen = false;
+      await user.save();
+    }
     generateTokenAndSetCookie(user._id, res);
     res.status(200).json({
       _id: user._id,
@@ -74,7 +80,6 @@ const loginUser = async (req, res) => {
     res.status(500).json({
       error: error.message,
     });
-    console.log("Error in login: ", error.message);
   }
 };
 
@@ -88,7 +93,6 @@ const logoutUser = async (req, res) => {
     res.status(500).json({
       error: error.message,
     });
-    console.log("Error in logout: ", error.message);
   }
 };
 
@@ -169,6 +173,20 @@ const updateUser = async (req, res) => {
     user.profilePic = profilePic || user.profilePic;
     user.bio = bio || user.bio;
     user = await user.save();
+    //This is for updating the username of the users in the postPage so
+    // when you reply and later change the username the same sma echange will also reflect to the post page
+    await Post.updateMany(
+      {
+        "replies.userId": userId,
+      },
+      {
+        $set: {
+          "replies.$[reply].username": user.username,
+          "replies.$[reply].userProfilePic": user.profilePic,
+        },
+      },
+      { arrayFilters: [{ "reply.userId": userId }] }
+    );
 
     // To ignore password
     user.password = null;
@@ -183,11 +201,21 @@ const updateUser = async (req, res) => {
 };
 
 const getProfile = async (req, res) => {
-  const { username } = req.params;
+  //We will fetch userprofile either with username or userId
+  //Query is either username or userId
+  const { query } = req.params;
+
   try {
-    const user = await User.findOne({ username })
-      .select("-password")
-      .select("updatedAt");
+    let user;
+    if (mongoose.Types.ObjectId.isValid(query)) {
+      user = await User.findOne({ _id: query })
+        .select("-password")
+        .select("-updatedAt");
+    } else {
+      user = await User.findOne({ username: query })
+        .select("-password")
+        .select("-updatedAt");
+    }
     if (!user) {
       return res.status(400).json({
         error: "User not found",
@@ -202,6 +230,54 @@ const getProfile = async (req, res) => {
   }
 };
 
+const getSuggestedUser = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const userFollowedByYou = await User.findById(userId).select("following");
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: userId },
+        },
+      },
+      {
+        $sample: { size: 10 },
+      },
+    ]);
+    const filteredUsers = users.filter(
+      (user) => !userFollowedByYou.following.includes(user._id)
+    );
+    const suggestedUsers = filteredUsers.slice(0, 4);
+    suggestedUsers.forEach((user) => (user.password = null));
+    res.status(200).json(suggestedUsers);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+};
+
+const freezeAccount = async (req, res) => {
+  try {
+    console.log("I am called");
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(400).json({
+        error: "USer not found",
+      });
+    }
+    user.isFrozen = true;
+    await user.save();
+    res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+};
+
 export {
   signupUser,
   loginUser,
@@ -209,4 +285,6 @@ export {
   followUnfollowUser,
   updateUser,
   getProfile,
+  getSuggestedUser,
+  freezeAccount,
 };

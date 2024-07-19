@@ -89,7 +89,7 @@ const UserPost = ({ likes, replies, postImg, caption }) => {
             </Flex>
           </Flex>
 
-          <Text>{caption}</Text>
+          {/* <Text>{caption}</Text> */}
           {postImg && (
             <Box
               borderRadius={6}

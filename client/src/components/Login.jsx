@@ -13,9 +13,10 @@ import {
   Text,
   useColorModeValue,
   Link,
+  Spinner,
 } from "@chakra-ui/react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import authScreenAtom from "../atom/authAtom";
 import useShowToast from "../hooks/useShowToast";
 import userAtom from "../atom/userAtom";
@@ -24,15 +25,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const setAuthScreen = useSetRecoilState(authScreenAtom);
   const setUser = useSetRecoilState(userAtom);
+  const user = useRecoilValue(userAtom);
   const [inputs, setInputs] = useState({
     username: "",
     password: "",
   });
   const showToast = useShowToast();
-
+  const [loading, setLoading] = useState(false);
   const handleLogin = async () => {
-    console.log("handleLogin called"); // Add this log to check if function is called
     try {
+      setLoading(true);
       const res = await fetch("/api/users/login", {
         method: "POST",
         headers: {
@@ -52,6 +54,8 @@ const Login = () => {
     } catch (error) {
       console.log("Catch error:", error);
       showToast("Error", error, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,7 +118,7 @@ const Login = () => {
             </FormControl>
             <Stack spacing={10} pt={2}>
               <Button
-                loadingText="Submitting"
+                loadingText="Logging in.."
                 size="lg"
                 bg={useColorModeValue("gray.600", "gray.700")}
                 color={"white"}
@@ -122,6 +126,7 @@ const Login = () => {
                   bg: useColorModeValue("gray.600", "gray.800"),
                 }}
                 onClick={handleLogin}
+                isLoading={loading}
               >
                 Login
               </Button>
