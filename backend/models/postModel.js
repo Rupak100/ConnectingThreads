@@ -4,6 +4,7 @@ const postSchema = mongoose.Schema(
   {
     postedBy: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     text: {
@@ -14,7 +15,7 @@ const postSchema = mongoose.Schema(
       type: String,
     },
     likes: {
-      //array of user Id's
+      // array of user ids
       type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
       default: [],
@@ -43,5 +44,7 @@ const postSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
 const Post = mongoose.model("Post", postSchema);
+
 export default Post;

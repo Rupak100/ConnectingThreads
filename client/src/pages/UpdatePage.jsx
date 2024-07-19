@@ -88,7 +88,7 @@ export default function UpdatePage() {
           <Heading lineHeight={1.1} fontSize={{ base: "2xl", sm: "3xl" }}>
             User Profile Edit
           </Heading>
-          <FormControl isRequired>
+          <FormControl>
             <Stack direction={["column", "row"]} spacing={6}>
               <Center>
                 <Avatar
