@@ -7,11 +7,12 @@ import cookieParser from "cookie-parser";
 import messageRoutes from "./routes/messageRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { app, server } from "./socketConfig/socket.js";
+import path from "path";
 dotenv.config();
 connectDB();
 
 const PORT = process.env.PORT || 3000;
-
+const __dirname = path.resolve();
 cloudinary.config({
   cloud_name: process.env.CLOUDNARY_CLOUD_NAME,
   api_key: process.env.CLOUDNARY_API_KEY,
@@ -33,6 +34,14 @@ app.use(cookieParser());
 app.use("/api/users", userRouter);
 app.use("/api/posts", postRoutes);
 app.use("/api/messages", messageRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/client/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
+  });
+}
 server.listen(PORT, () => {
   console.log(`server started at http:/localhost:${PORT}`);
 });
