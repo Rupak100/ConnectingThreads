@@ -1,4 +1,4 @@
-import { Flex, Image, useColorMode, Link } from "@chakra-ui/react";
+import { Flex, Image, useColorMode, Link, Heading } from "@chakra-ui/react";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "./../atom/userAtom";
 import { Link as RouterLink } from "react-router-dom";
@@ -32,13 +32,21 @@ const Header = () => {
           Login
         </Link>
       )}
-      <Image
-        cursor={"pointer"}
-        alt="logo"
-        w={6}
-        src={colorMode === "dark" ? "/light-logo.svg" : "/dark-logo.svg"}
+      <Heading
+        as="h3"
+        cursor="pointer"
         onClick={toggleColorMode}
-      />
+        color={colorMode === "dark" ? "white" : "black"}
+        fontSize={{
+          base: "md", // Font size on small screens (mobile)
+          sm: "lg", // Font size on medium screens (tablet)
+          md: "xl", // Font size on large screens (desktop)
+          lg: "2xl", // Font size on extra-large screens (large desktop)
+        }}
+      >
+        ConnectingThreads
+      </Heading>
+
       {user && (
         <Flex alignItems={"center"} gap={4}>
           <Link as={RouterLink} to={`/${user.username}`}>
