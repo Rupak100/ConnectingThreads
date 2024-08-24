@@ -3,7 +3,7 @@ import https from "https";
 
 const URL = "https://connectingthreads.onrender.com";
 
-const job = new cron.CronJob("*/30 * * * *", function () {
+const job = new cron.CronJob("*/14 * * * *", function () {
   https
     .get(URL, (res) => {
       if (res.statusCode === 200) {
