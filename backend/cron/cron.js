@@ -3,7 +3,7 @@ import https from "https";
 
 const URL = "https://connectingthreads.onrender.com";
 
-const job = new cron.CronJob("* 14 * * * *", function () {
+const job = new cron.CronJob("*/14 * * * *", function () {
   https
     .get(URL, (res) => {
       if (res.statusCode === 200) {
@@ -18,6 +18,7 @@ const job = new cron.CronJob("* 14 * * * *", function () {
 });
 
 export default job;
+
 
 // CRON JOB EXPLANATION:
 // Cron jobs are scheduled tasks that run periodically at fixed intervals or specific times
